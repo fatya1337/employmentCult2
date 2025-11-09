@@ -232,10 +232,10 @@
       transform: scale(1.05);
     }
 
-    /* Контейнер для кнопки и текста */
+    /* Контейнер для кнопки и текста - ПОДВИНУТ ВВЕРХ */
     .button-container {
       position: absolute;
-      bottom: 40px;
+      bottom: 120px; /* Подвинуто вверх */
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -317,6 +317,50 @@
     .game-button:hover {
       transform: scale(1.1);
       box-shadow: 0 0 25px rgba(106, 17, 203, 0.9);
+    }
+
+    /* НАДПИСЬ CA ВНИЗУ */
+    .ca-text {
+      position: absolute;
+      bottom: 30px;
+      width: 100%;
+      text-align: center;
+      color: #ffd700;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      text-shadow: 
+        0 0 20px #ff6b00,
+        0 0 40px #ff8c00,
+        0 0 60px #ffa500,
+        0 0 80px #ffd700;
+      animation: caGlow 3s infinite alternate;
+      z-index: 10;
+      font-family: 'Arial Black', sans-serif;
+      background: linear-gradient(45deg, #ff6b00, #ffd700, #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      padding: 10px 0;
+    }
+
+    @keyframes caGlow {
+      0% {
+        text-shadow: 
+          0 0 10px #ff6b00,
+          0 0 20px #ff8c00,
+          0 0 30px #ffa500;
+        transform: scale(1);
+      }
+      100% {
+        text-shadow: 
+          0 0 20px #ffd700,
+          0 0 40px #ffa500,
+          0 0 60px #ff8c00,
+          0 0 80px #ff6b00;
+        transform: scale(1.05);
+      }
     }
 
     /* Модальное окно игры */
@@ -430,6 +474,16 @@
         width: 300px;
         height: 500px;
       }
+      
+      .ca-text {
+        font-size: 1.8rem;
+        letter-spacing: 4px;
+        bottom: 20px;
+      }
+      
+      .button-container {
+        bottom: 100px;
+      }
     }
   </style>
 </head>
@@ -472,12 +526,16 @@
     <button class="game-button">MINI GAME</button>
   </div>
 
+  <!-- Кнопки ПОДВИНУТЫ ВВЕРХ -->
   <div class="button-container">
     <div class="join-text">JOIN US</div>
     <a href="https://x.com/i/communities/1987484183250239843" class="x-button">
       <i class="fab fa-twitter"></i> X COMMUNITY
     </a>
   </div>
+
+  <!-- НАДПИСЬ CA ВНИЗУ -->
+  <div class="ca-text" id="caText">CA</div>
 
   <!-- Модальное окно игры -->
   <div class="game-modal" id="gameModal">
@@ -495,6 +553,36 @@
   </div>
 
   <script>
+    // ==================== КОНФИГУРАЦИЯ ====================
+    // Можешь менять эти настройки:
+    const CONFIG = {
+      // Текст CA (можешь изменить на любой другой)
+      CA_TEXT: "CA",
+      
+      // Цвета для текста CA
+      CA_COLORS: {
+        primary: "#ffd700",
+        gradient: ["#ff6b00", "#ffd700", "#ff8c00"],
+        glow: ["#ff6b00", "#ff8c00", "#ffa500", "#ffd700"]
+      },
+      
+      // Ссылка для X COMMUNITY
+      X_LINK: "https://x.com/i/communities/1987484183250239843",
+      
+      // Настройки игры
+      GAME: {
+        gravity: 0.2,
+        jump: -7,
+        pipeSpeed: 1.5,
+        pipeGap: 220
+      }
+    };
+    // ==================== КОНЕЦ КОНФИГУРАЦИИ ====================
+
+    // Применяем конфигурацию
+    document.getElementById('caText').textContent = CONFIG.CA_TEXT;
+    document.querySelector('.x-button').href = CONFIG.X_LINK;
+
     // Элементы игры
     const gameModal = document.getElementById('gameModal');
     const gameCanvas = document.getElementById('gameCanvas');
@@ -525,15 +613,13 @@
       width: 40,
       height: 30,
       velocity: 0,
-      gravity: 0.2, // Уменьшена гравитация для более плавного падения
-      jump: -7, // Уменьшена сила прыжка для более плавного управления
+      gravity: CONFIG.GAME.gravity,
+      jump: CONFIG.GAME.jump,
       
       draw: function() {
         if (transformation) {
-          // После трансформации используем яркое изображение
           ctx.drawImage(brightImage, this.x, this.y, this.width, this.height);
         } else {
-          // До трансформации используем темное изображение
           ctx.drawImage(darkImage, this.x, this.y, this.width, this.height);
         }
       },
@@ -542,13 +628,11 @@
         this.velocity += this.gravity;
         this.y += this.velocity;
         
-        // Проверка столкновения с землей
         if (this.y + this.height >= gameCanvas.height - 80) {
           this.y = gameCanvas.height - 80 - this.height;
           gameOver();
         }
         
-        // Проверка столкновения с потолком
         if (this.y <= 0) {
           this.y = 0;
           this.velocity = 0;
@@ -560,106 +644,88 @@
       }
     };
 
-    // Трубы с красивой текстурой
+    // Трубы
     const pipes = {
       position: [],
-      gap: 220, // Увеличили зазор для легкости
-      minYPos: 50, // Минимальная высота верхней трубы
-      maxYPos: 280, // Максимальная высота верхней трубы
-      dx: 1.5, // Замедлили движение труб
+      gap: CONFIG.GAME.pipeGap,
+      minYPos: 50,
+      maxYPos: 280,
+      dx: CONFIG.GAME.pipeSpeed,
       width: 60,
       
       draw: function() {
         for (let i = 0; i < this.position.length; i++) {
           let p = this.position[i];
           
-          // Текстуры для труб
           if (transformation) {
-            // Красивые цветные трубы после трансформации
-            this.drawColoredPipe(p.x, p.y, p.width, p.height, true); // Верхняя труба
-            this.drawColoredPipe(p.x, p.y + p.height + this.gap, p.width, gameCanvas.height, false); // Нижняя труба
+            this.drawColoredPipe(p.x, p.y, p.width, p.height, true);
+            this.drawColoredPipe(p.x, p.y + p.height + this.gap, p.width, gameCanvas.height, false);
           } else {
-            // Стильные серые трубы до трансформации
-            this.drawGrayPipe(p.x, p.y, p.width, p.height, true); // Верхняя труба
-            this.drawGrayPipe(p.x, p.y + p.height + this.gap, p.width, gameCanvas.height, false); // Нижняя труба
+            this.drawGrayPipe(p.x, p.y, p.width, p.height, true);
+            this.drawGrayPipe(p.x, p.y + p.height + this.gap, p.width, gameCanvas.height, false);
           }
         }
       },
       
-      // Рисуем цветную трубу с текстурой
       drawColoredPipe: function(x, y, width, height, isTop) {
-        // Основной цвет трубы
         const pipeColor = isTop ? '#388E3C' : '#2E7D32';
         const highlightColor = '#4CAF50';
         const shadowColor = '#1B5E20';
         
-        // Основное тело трубы
         ctx.fillStyle = pipeColor;
         ctx.fillRect(x, y, width, height);
         
-        // Добавляем текстуру - полосы
         ctx.fillStyle = highlightColor;
         for (let i = 0; i < height; i += 15) {
           ctx.fillRect(x, y + i, width, 3);
         }
         
-        // Бордюр
         ctx.fillStyle = shadowColor;
         ctx.fillRect(x, y, width, 5);
         if (!isTop) {
           ctx.fillRect(x, y + height - 5, width, 5);
         }
         
-        // Внутренняя тень для объема
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.fillRect(x, y, 3, height);
         
-        // Внешняя подсветка
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(x + width - 3, y, 3, height);
       },
       
-      // Рисуем серую трубу с текстурой
       drawGrayPipe: function(x, y, width, height, isTop) {
-        // Основной цвет трубы
         const pipeColor = isTop ? '#555' : '#444';
         const highlightColor = '#666';
         const shadowColor = '#333';
         
-        // Основное тело трубы
         ctx.fillStyle = pipeColor;
         ctx.fillRect(x, y, width, height);
         
-        // Добавляем текстуру - полосы
         ctx.fillStyle = highlightColor;
         for (let i = 0; i < height; i += 15) {
           ctx.fillRect(x, y + i, width, 3);
         }
         
-        // Бордюр
         ctx.fillStyle = shadowColor;
         ctx.fillRect(x, y, width, 5);
         if (!isTop) {
           ctx.fillRect(x, y + height - 5, width, 5);
         }
         
-        // Внутренняя тень для объема
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fillRect(x, y, 3, height);
         
-        // Внешняя подсветка
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(x + width - 3, y, 3, height);
       },
       
       update: function() {
-        // Генерируем новые трубы каждые 150 кадров (реже, чем было)
         if (frames % 150 === 0) {
           const pipeHeight = this.minYPos + Math.random() * (this.maxYPos - this.minYPos);
           
           this.position.push({
             x: gameCanvas.width,
-            y: -pipeHeight, // Отрицательное значение, чтобы труба появлялась сверху
+            y: -pipeHeight,
             width: this.width,
             height: 300,
             passed: false
@@ -670,33 +736,23 @@
           let p = this.position[i];
           p.x -= this.dx;
           
-          // Проверка столкновения
           if (player.x + player.width > p.x && player.x < p.x + p.width) {
-            // Столкновение с верхней трубой
-            if (player.y < p.y + p.height) {
-              gameOver();
-            }
-            // Столкновение с нижней трубой
-            if (player.y + player.height > p.y + p.height + this.gap) {
+            if (player.y < p.y + p.height || player.y + player.height > p.y + p.height + this.gap) {
               gameOver();
             }
           }
           
-          // Добавление очков
           if (p.x + p.width <= player.x && !p.passed) {
             score++;
             scoreElement.textContent = `Score: ${score}`;
             p.passed = true;
             
-            // Трансформация после 5 очков
             if (score >= 5 && !transformation) {
               transformation = true;
-              // Меняем фон на цветной
               document.querySelector('.game-container').style.background = 'linear-gradient(to bottom, #87CEEB 0%, #98D8F0 30%, #B4E8A8 70%, #7BCF5C 100%)';
             }
           }
           
-          // Удаление труб за пределами экрана
           if (p.x + p.width <= 0) {
             this.position.shift();
           }
@@ -708,17 +764,14 @@
     const background = {
       draw: function() {
         if (transformation) {
-          // Цветной фон после трансформации
           ctx.fillStyle = '#87CEEB';
           ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
           
-          // Солнце
           ctx.fillStyle = '#FFEB3B';
           ctx.beginPath();
           ctx.arc(300, 80, 40, 0, Math.PI * 2);
           ctx.fill();
           
-          // Облака
           ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
           ctx.beginPath();
           ctx.arc(100, 80, 20, 0, Math.PI * 2);
@@ -726,27 +779,22 @@
           ctx.arc(160, 80, 20, 0, Math.PI * 2);
           ctx.fill();
           
-          // Земля
           ctx.fillStyle = '#4CAF50';
           ctx.fillRect(0, gameCanvas.height - 80, gameCanvas.width, 80);
           
-          // Трава на земле
           ctx.fillStyle = '#2E7D32';
           for (let i = 0; i < gameCanvas.width; i += 10) {
             ctx.fillRect(i, gameCanvas.height - 80, 5, 10);
           }
         } else {
-          // Серый фон до трансформации
           ctx.fillStyle = '#2d2d2d';
           ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
           
-          // Луна
           ctx.fillStyle = '#888';
           ctx.beginPath();
           ctx.arc(300, 80, 30, 0, Math.PI * 2);
           ctx.fill();
           
-          // Звезды
           ctx.fillStyle = '#666';
           for (let i = 0; i < 10; i++) {
             ctx.beginPath();
@@ -754,7 +802,6 @@
             ctx.fill();
           }
           
-          // Земля
           ctx.fillStyle = '#1b1b1b';
           ctx.fillRect(0, gameCanvas.height - 80, gameCanvas.width, 80);
         }
@@ -765,17 +812,10 @@
     function gameLoop() {
       if (!gameRunning) return;
       
-      // Очистка canvas
       ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-      
-      // Отрисовка фона
       background.draw();
-      
-      // Обновление и отрисовка труб
       pipes.update();
       pipes.draw();
-      
-      // Обновление и отрисовка игрока
       player.update();
       player.draw();
       
@@ -845,4 +885,3 @@
   </script>
 </body>
 </html>
-
